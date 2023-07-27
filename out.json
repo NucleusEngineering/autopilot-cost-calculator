@@ -1,0 +1,138 @@
+{
+ "gke-gke-cluster-calculat-default-pool-a3612e21-bmrr": {
+  "Name": "gke-gke-cluster-calculat-default-pool-a3612e21-bmrr",
+  "Workloads": [
+   {
+    "Name": "open-match-redis-node-0",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-bmrr",
+    "Containers": 3,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   }
+  ],
+  "InstanceType": "e2-standard-2",
+  "Region": "europe-west3",
+  "Spot": false,
+  "Cost": 0.017496756
+ },
+ "gke-gke-cluster-calculat-default-pool-a3612e21-cfdn": {
+  "Name": "gke-gke-cluster-calculat-default-pool-a3612e21-cfdn",
+  "Workloads": [
+   {
+    "Name": "agones-allocator-6cd5476b95-x6fmc",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-cfdn",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-controller-57bcc766fb-88qfd",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-cfdn",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-ping-89cd8b565-4gqrl",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-cfdn",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   }
+  ],
+  "InstanceType": "e2-standard-2",
+  "Region": "europe-west3",
+  "Spot": false,
+  "Cost": 0.05249026799999999
+ },
+ "gke-gke-cluster-calculat-default-pool-a3612e21-sdpr": {
+  "Name": "gke-gke-cluster-calculat-default-pool-a3612e21-sdpr",
+  "Workloads": [
+   {
+    "Name": "agones-allocator-6cd5476b95-5qgn4",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-sdpr",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-extensions-5d7c8cd746-msps2",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-sdpr",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   }
+  ],
+  "InstanceType": "e2-standard-2",
+  "Region": "europe-west3",
+  "Spot": false,
+  "Cost": 0.034993512
+ },
+ "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c": {
+  "Name": "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c",
+  "Workloads": [
+   {
+    "Name": "agones-allocator-6cd5476b95-nxl46",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-controller-57bcc766fb-mztlx",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-extensions-5d7c8cd746-zldgn",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   },
+   {
+    "Name": "agones-ping-89cd8b565-5t2h4",
+    "Node_name": "gke-gke-cluster-calculat-default-pool-a3612e21-xv3c",
+    "Containers": 1,
+    "Cpu": 250,
+    "Memory": 500,
+    "Storage": 10,
+    "Cost": 0.017496756,
+    "Compute_class": 0
+   }
+  ],
+  "InstanceType": "e2-standard-2",
+  "Region": "europe-west3",
+  "Spot": false,
+  "Cost": 0.069987024
+ }
+}
