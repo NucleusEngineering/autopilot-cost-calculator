@@ -31,14 +31,6 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-// Committed use discounts for Autopilot clusters are available.
-// With committed use discounts, you will receive 45% discount off on-demand
-// pricing for a three-year commitment or 20% discount off on-demand
-// pricing for a one-year commitment.
-
-const ONE_YEAR_DISCOUNT = 0.8
-const THREE_YEAR_DISCOUNT = 0.55
-
 func main() {
 	cfg, err := ini.Load("config.ini")
 	if err != nil {
