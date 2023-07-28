@@ -22,13 +22,16 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nucleusengineering/autopilot-cost-calculator/calculator"
+	"github.com/nucleusengineering/autopilot-cost-calculator/cluster"
 )
 
-// Table UI
-
-var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240"))
+var (
+	baseStyle         = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240"))
+	infoTextStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("128"))
+	nodeTextStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("160"))
+	workloadTextStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("25")).Background(lipgloss.Color("192"))
+)
 
 type tableModel struct {
 	table table.Model
@@ -45,9 +48,7 @@ func (m tableModel) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-// Displaying content implementation
-
-func DisplayNodeTable(nodes map[string]Node) {
+func DisplayNodeTable(nodes map[string]cluster.Node) {
 	columns := []table.Column{
 		{Title: "Name", Width: 55},
 		{Title: "Type", Width: 15},
@@ -60,34 +61,34 @@ func DisplayNodeTable(nodes map[string]Node) {
 		rows = append(rows, table.Row{node.Name, node.InstanceType, node.Region, strconv.FormatBool(node.Spot)})
 	}
 
-	t := table.New(
+	tbl := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(false),
 		table.WithHeight(len(rows)),
 	)
 
-	s := table.DefaultStyles()
-	s.Header = s.Header.
+	stl := table.DefaultStyles()
+	stl.Header = stl.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("255")).
 		BorderBottom(true).
 		Bold(false)
-	s.Selected = s.Selected.
+	stl.Selected = stl.Selected.
 		Foreground(lipgloss.Color("255")).
 		//	Background(lipgloss.Color("57")).
 		Bold(false)
-	t.SetStyles(s)
+	tbl.SetStyles(stl)
 
-	tp := tea.NewProgram(tableModel{t})
-	_, err := tp.Run()
+	program := tea.NewProgram(tableModel{tbl})
+	_, err := program.Run()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func DisplayWorkloadTable(nodes map[string]Node) {
+func DisplayWorkloadTable(nodes map[string]cluster.Node, oneYearDiscount float64, threeYearDiscount float64) {
 	columns := []table.Column{
 		{Title: "Node", Width: 55},
 		{Title: "Workload", Width: 40},
@@ -101,16 +102,16 @@ func DisplayWorkloadTable(nodes map[string]Node) {
 	}
 
 	var rows []table.Row
-	total_cost := CLUSTER_FEE // Cluster fee is fixed amount
-	total_cost_spot := 0.0
+	totalCost := calculator.CLUSTER_FEE // Cluster fee is fixed amount
+	totalCostSpot := 0.0
 
 	for _, node := range nodes {
 		for _, workload := range node.Workloads {
 			// Nodes on spot don't amount for 1 or 3 year commit discounts
 			if node.Spot {
-				total_cost_spot += workload.Cost
+				totalCostSpot += workload.Cost
 			} else {
-				total_cost += workload.Cost
+				totalCost += workload.Cost
 			}
 			rows = append(rows,
 				table.Row{
@@ -121,39 +122,39 @@ func DisplayWorkloadTable(nodes map[string]Node) {
 					strconv.FormatInt(workload.Cpu, 10),
 					strconv.FormatInt(workload.Memory, 10),
 					strconv.FormatInt(workload.Storage, 10),
-					COMPUTE_CLASSES[workload.Compute_class],
+					cluster.ComputeClasses[workload.ComputeClass],
 					strconv.FormatFloat(workload.Cost, 'G', 7, 64),
 				},
 			)
 		}
 	}
 
-	rows = append(rows, table.Row{"Total cost per cluster per hour", "", "", "", "", "", "", "", strconv.FormatFloat(total_cost, 'G', 7, 64)})
-	rows = append(rows, table.Row{"... 1 year commit", "", "", "", "", "", "", "", strconv.FormatFloat(total_cost_spot+total_cost*ONE_YEAR_DISCOUNT, 'G', 7, 64)})
-	rows = append(rows, table.Row{"... with 3 year commit", "", "", "", "", "", "", "", strconv.FormatFloat(total_cost_spot+total_cost*THREE_YEAR_DISCOUNT, 'G', 7, 64)})
+	rows = append(rows, table.Row{"Total cost per cluster per hour", "", "", "", "", "", "", "", strconv.FormatFloat(totalCost, 'G', 7, 64)})
+	rows = append(rows, table.Row{"... 1 year commit", "", "", "", "", "", "", "", strconv.FormatFloat(totalCostSpot+totalCost*oneYearDiscount, 'G', 7, 64)})
+	rows = append(rows, table.Row{"... with 3 year commit", "", "", "", "", "", "", "", strconv.FormatFloat(totalCostSpot+totalCost*threeYearDiscount, 'G', 7, 64)})
 
-	t := table.New(
+	tbl := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(false),
 		table.WithHeight(len(rows)),
 	)
 
-	s := table.DefaultStyles()
+	stl := table.DefaultStyles()
 
-	s.Header = s.Header.
+	stl.Header = stl.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("255")).
 		BorderBottom(true).
 		Bold(false)
-	s.Selected = s.Selected.
+	stl.Selected = stl.Selected.
 		Foreground(lipgloss.Color("255")).
 		//	Background(lipgloss.Color("57")).
 		Bold(false)
-	t.SetStyles(s)
+	tbl.SetStyles(stl)
 
-	tp := tea.NewProgram(tableModel{t})
-	_, err := tp.Run()
+	program := tea.NewProgram(tableModel{tbl})
+	_, err := program.Run()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

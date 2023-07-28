@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cluster
 
 import (
 	"context"
@@ -31,23 +31,23 @@ import (
 type ComputeClass int8
 
 const (
-	COMPUTE_CLASS_REGULAR      ComputeClass = 0
-	COMPUTE_CLASS_BALANCED     ComputeClass = 1
-	COMPUTE_CLASS_SCALEOUT     ComputeClass = 2
-	COMPUTE_CLASS_SCALEOUT_ARM ComputeClass = 3
+	ComputeClassRegular     ComputeClass = 0
+	ComputeClassBalanced    ComputeClass = 1
+	ComputeClassScaleout    ComputeClass = 2
+	ComputeClassScaleoutArm ComputeClass = 3
 )
 
-var COMPUTE_CLASSES [4]string = [4]string{"Regular", "Balanced", "Scale-out", "Scale-out arm64"}
+var ComputeClasses [4]string = [4]string{"Regular", "Balanced", "Scale-out", "Scale-out arm64"}
 
 type Workload struct {
-	Name          string
-	Node_name     string
-	Containers    int
-	Cpu           int64
-	Memory        int64
-	Storage       int64
-	Cost          float64
-	Compute_class ComputeClass
+	Name         string
+	Node_name    string
+	Containers   int
+	Cpu          int64
+	Memory       int64
+	Storage      int64
+	Cost         float64
+	ComputeClass ComputeClass
 }
 
 type Node struct {
@@ -114,7 +114,10 @@ func GetClusterNodes(clientset *kubernetes.Clientset) (map[string]Node, error) {
 }
 
 func ListPods(client kubernetes.Interface) (*v1.PodList, error) {
-	pods, err := client.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{FieldSelector: "status.phase=Running,metadata.namespace!=kube-system,metadata.namespace!=gke-gmp-system"})
+	pods, err := client.CoreV1().Pods("").List(
+		context.Background(),
+		metav1.ListOptions{FieldSelector: "status.phase=Running,metadata.namespace!=kube-system,metadata.namespace!=gke-gmp-system"},
+	)
 	if err != nil {
 		err = fmt.Errorf("error getting pods: %v", err)
 		return nil, err

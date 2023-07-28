@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module github.com/kennycoder/gke-ap-calculator
+module github.com/nucleusengineering/autopilot-cost-calculator
 
 go 1.20
 
@@ -22,6 +22,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.7.1
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	google.golang.org/api v0.129.0
+	gopkg.in/ini.v1 v1.67.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.3

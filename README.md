@@ -30,9 +30,7 @@ The easiest way to use the tool is to authenticate via ` gcloud auth application
 
 Now the application should be able connect to your GKE cluster and provide a price estimate.
 
-JSON export is also possible by adding a `-json` flag. By default the file is `./output.json` but this can be changed with `-json-file=...` argument.
-
-Regular output can be supressed with `-quiet` flag.
+JSON output is also possible by using a `-json` flag. If you wish to output JSON to a file, add `-json-file=...` argument.
 
 ### Pricing for GKE Autopilot
 

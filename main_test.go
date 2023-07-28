@@ -15,109 +15,142 @@
 package main
 
 import (
+	"log"
 	"math"
 	"testing"
+
+	"github.com/nucleusengineering/autopilot-cost-calculator/calculator"
+	"github.com/nucleusengineering/autopilot-cost-calculator/cluster"
+	"gopkg.in/ini.v1"
 )
 
-const float64EqualityThreshold = 1e-9
+const (
+	float64EqualityThreshold = 1e-9
+)
+
+var (
+	pricing calculator.PriceList
+	config  *ini.File
+	service calculator.PricingService
+)
+
+func TestMain(m *testing.M) {
+
+	// Setting mocked pricing
+	pricing = calculator.PriceList{
+		Region:       "test-region-1",
+		StoragePrice: 0.0000706,
+
+		// regular pricing
+		CpuPrice:            0.0573,
+		MemoryPrice:         0.0063421,
+		CpuBalancedPrice:    0.0831,
+		MemoryBalancedPrice: 0.0091933,
+		CpuScaleoutPrice:    0.0722,
+		MemoryScaleoutPrice: 0.0079911,
+
+		// spot pricing
+		SpotCpuPrice:            0.0172,
+		SpotMemoryPrice:         0.0019026,
+		SpotCpuBalancedPrice:    0.0249,
+		SpotMemoryBalancedPrice: 0.002758,
+		SpotCpuScaleoutPrice:    0.0217,
+		SpotMemoryScaleoutPrice: 0.0023973,
+	}
+
+	// Loading config
+	var err error
+	config, err = ini.Load("config.ini")
+	if err != nil {
+		log.Fatalf("Fail to read file: %v", err)
+	}
+
+	// Setting the service for the tests
+	service = calculator.PricingService{
+		Pricing: pricing,
+		Config:  config,
+	}
+
+	m.Run()
+}
 
 func TestValidateLowerLimits(t *testing.T) {
 	// Test Case #1
-	var cpu_want int64 = 1000
-	var memory_want int64 = 1000
-	var storage_want int64 = 1000
+	var cpuWant int64 = 1000
+	var memoryWant int64 = 1000
+	var storageWant int64 = 1000
 
-	cpu, memory, storage := ValidateLowerLimits(1000, 1000, 1000)
-	if cpu != cpu_want || memory != memory_want || storage != storage_want {
-		t.Fatalf(`ValidateLowerLimits(1000,1000,1000,COMPUTE_CLASS_REGULAR) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpu_want, memory_want, storage_want)
+	cpu, memory, storage := calculator.ValidateLowerLimits(1000, 1000, 1000)
+	if cpu != cpuWant || memory != memoryWant || storage != storageWant {
+		t.Fatalf(`ValidateLowerLimits(1000,1000,1000,ComputeClassRegular) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
 	}
 
 	// Test Case #2
-	cpu_want = 250
-	memory_want = 500
-	storage_want = 10
+	cpuWant = 250
+	memoryWant = 500
+	storageWant = 10
 
-	cpu, memory, storage = ValidateLowerLimits(249, 499, 9)
-	if cpu != cpu_want || memory != memory_want || storage != storage_want {
-		t.Fatalf(`ValidateLowerLimits(10,10,5,COMPUTE_CLASS_REGULAR) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpu_want, memory_want, storage_want)
+	cpu, memory, storage = calculator.ValidateLowerLimits(249, 499, 9)
+	if cpu != cpuWant || memory != memoryWant || storage != storageWant {
+		t.Fatalf(`ValidateLowerLimits(10,10,5,ComputeClassRegular) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
 	}
 }
 
 func TestDecideComputeClass(t *testing.T) {
 	// Test Case #1
-	compute_class_want := COMPUTE_CLASS_REGULAR
-	compute_class := DecideComputeClass("test-pod", 10000, 10000, false)
+	computeClassWant := cluster.ComputeClassRegular
+	computeClass := service.DecideComputeClass("test-pod", 10000, 10000, false)
 
-	if compute_class != compute_class_want {
-		t.Fatalf(`DecideComputeClass(1000,1000,false) = %s doesn't match expected %s`, COMPUTE_CLASSES[compute_class], COMPUTE_CLASSES[compute_class_want])
+	if computeClass != computeClassWant {
+		t.Fatalf(`DecideComputeClass(1000,1000,false) = %s doesn't match expected %s`, cluster.ComputeClasses[computeClass], cluster.ComputeClasses[computeClassWant])
 	}
 
 	// Test Case #2
-	compute_class_want = COMPUTE_CLASS_BALANCED
-	compute_class = DecideComputeClass("test-pod", 35000, 100000, false)
+	computeClassWant = cluster.ComputeClassBalanced
+	computeClass = service.DecideComputeClass("test-pod", 35000, 100000, false)
 
-	if compute_class != compute_class_want {
-		t.Fatalf(`DecideComputeClass(35000,100000,false) = %s doesn't match expected %s`, COMPUTE_CLASSES[compute_class], COMPUTE_CLASSES[compute_class_want])
+	if computeClass != computeClassWant {
+		t.Fatalf(`DecideComputeClass(35000,100000,false) = %s doesn't match expected %s`, cluster.ComputeClasses[computeClass], cluster.ComputeClasses[computeClassWant])
 	}
 
 	// Test Case #3
-	compute_class_want = COMPUTE_CLASS_SCALEOUT_ARM
-	compute_class = DecideComputeClass("test-pod", 20000, 80000, true)
+	computeClassWant = cluster.ComputeClassScaleoutArm
+	computeClass = service.DecideComputeClass("test-pod", 20000, 80000, true)
 
-	if compute_class != compute_class_want {
-		t.Fatalf(`DecideComputeClass(25000, 50000, true) = %s doesn't match expected %s`, COMPUTE_CLASSES[compute_class], COMPUTE_CLASSES[compute_class_want])
+	if computeClass != computeClassWant {
+		t.Fatalf(`DecideComputeClass(25000, 50000, true) = %s doesn't match expected %s`, cluster.ComputeClasses[computeClass], cluster.ComputeClasses[computeClassWant])
 	}
 
 }
 
 func TestCalculatePricing(t *testing.T) {
-	pricing := ap_pricing{
-		region:        "test-region-1",
-		storage_price: 0.0000706,
-
-		// regular pricing
-		cpu_price:             0.0573,
-		memory_price:          0.0063421,
-		cpu_balanced_price:    0.0831,
-		memory_balanced_price: 0.0091933,
-		cpu_scaleout_price:    0.0722,
-		memory_scaleout_price: 0.0079911,
-
-		// spot pricing
-		spot_cpu_price:             0.0172,
-		spot_memory_price:          0.0019026,
-		spot_cpu_balanced_price:    0.0249,
-		spot_memory_balanced_price: 0.002758,
-		spot_cpu_scaleout_price:    0.0217,
-		spot_memory_scaleout_price: 0.0023973,
-	}
 
 	// Test Case #1
 
-	compute_class := DecideComputeClass("test-pod", 4000, 16000, false)
-	price_want := 0.3313796 // 0.000706 (cpu price * 4) + 0.1014736 (memory price * 16) +0.2292 (storage price * 10)
-	price := CalculatePricing(4000, 16000, 10000, pricing, compute_class, false)
+	computeClass := service.DecideComputeClass("test-pod", 4000, 16000, false)
+	priceWant := 0.3313796 // 0.000706 (cpu price * 4) + 0.1014736 (memory price * 16) +0.2292 (storage price * 10)
+	price := service.CalculatePricing(4000, 16000, 10000, computeClass, false)
 
-	if !almostEqual(price, price_want) {
-		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, COMPUTE_CLASSES[compute_class], price, price_want)
+	if !almostEqual(price, priceWant) {
+		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, cluster.ComputeClasses[computeClass], price, priceWant)
 	}
 
 	// Test Case #2
-	compute_class = DecideComputeClass("test-pod", 40000, 80000, false)
-	price_want = 4.0601700 // 3.324 (cpu price * 40) + 0.735464 (memory price * 80) + 0.2292 (storage price * 10)
-	price = CalculatePricing(40000, 80000, 10000, pricing, compute_class, false)
+	computeClass = service.DecideComputeClass("test-pod", 40000, 80000, false)
+	priceWant = 4.0601700 // 3.324 (cpu price * 40) + 0.735464 (memory price * 80) + 0.2292 (storage price * 10)
+	price = service.CalculatePricing(40000, 80000, 10000, computeClass, false)
 
-	if !almostEqual(price, price_want) {
-		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, COMPUTE_CLASSES[compute_class], price, price_want)
+	if !almostEqual(price, priceWant) {
+		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, cluster.ComputeClasses[computeClass], price, priceWant)
 	}
 
 	// Test Case #3
-	compute_class = DecideComputeClass("test-pod", 25000, 100000, false)
-	price_want = 0.6209660 // 0.43 (cpu spot price * 25) + 0.19026 (spot memory price * 100) + 0.000706 (spot storage price * 10)
-	price = CalculatePricing(25000, 100000, 10000, pricing, compute_class, true)
+	computeClass = service.DecideComputeClass("test-pod", 25000, 100000, false)
+	priceWant = 0.6209660 // 0.43 (cpu spot price * 25) + 0.19026 (spot memory price * 100) + 0.000706 (spot storage price * 10)
+	price = service.CalculatePricing(25000, 100000, 10000, computeClass, true)
 
-	if !almostEqual(price, price_want) {
-		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, COMPUTE_CLASSES[compute_class], price, price_want)
+	if !almostEqual(price, priceWant) {
+		t.Fatalf(`CalculatePricing(4000, 16000, 10000, {test-region-pricing}, %s, false) = %.7f doesn't match expected %.7f`, cluster.ComputeClasses[computeClass], price, priceWant)
 	}
 
 }
