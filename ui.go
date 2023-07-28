@@ -27,10 +27,11 @@ import (
 )
 
 var (
-	baseStyle         = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240"))
-	infoTextStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("128"))
-	nodeTextStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("160"))
-	workloadTextStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("25")).Background(lipgloss.Color("192"))
+	baseStyle      = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240"))
+	pinkTextStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("128"))
+	blueTextStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("32"))
+	redTextStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("225")).Background(lipgloss.Color("160"))
+	greenTextStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("25")).Background(lipgloss.Color("192"))
 )
 
 type tableModel struct {

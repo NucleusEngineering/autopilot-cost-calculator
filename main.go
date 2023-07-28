@@ -126,10 +126,10 @@ func main() {
 		}
 
 	} else {
-		fmt.Println(infoTextStyle.Render(fmt.Sprintf("Cluster %q (%s) on version: v%s", clusterObject.Name, clusterObject.Status, clusterObject.CurrentMasterVersion)))
+		fmt.Println(pinkTextStyle.Render(fmt.Sprintf("Cluster %q (%s) on version: v%s", clusterObject.Name, clusterObject.Status, clusterObject.CurrentMasterVersion)))
 		fmt.Println()
 
-		fmt.Println(nodeTextStyle.Render(fmt.Sprintf("Total nodes at %s: %d", clusterRegion, len(nodes))))
+		fmt.Println(blueTextStyle.Render(fmt.Sprintf("Nodes that you currently have at your cluster in %s: %d", clusterRegion, len(nodes))))
 		DisplayNodeTable(nodes)
 		fmt.Println()
 
@@ -142,7 +142,9 @@ func main() {
 			threeYearDiscount = 1
 		}
 
-		fmt.Println(workloadTextStyle.Render(fmt.Sprintf("Total workloads on %s: %d", clusterName, len(workloads))))
+		fmt.Println(greenTextStyle.Render(fmt.Sprintf("%d workloads from your cluster (%s) mapped to GKE Autopilot mode.", len(workloads), clusterName)))
+		fmt.Println()
+		fmt.Println(redTextStyle.Render("Displayed values for mCPU, Memory and Storage are a snapshot of this point in time. Those are not requets/limits but currently used values"))
 		DisplayWorkloadTable(nodes, oneYearDiscount, threeYearDiscount)
 	}
 }
