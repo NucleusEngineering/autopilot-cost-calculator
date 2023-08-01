@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/nucleusengineering/autopilot-cost-calculator/calculator"
 	"github.com/nucleusengineering/autopilot-cost-calculator/cluster"
@@ -70,18 +69,9 @@ func main() {
 	}
 
 	clusterName := currentContext[3]
-	clusterZone := currentContext[2]
+	clusterRegion := currentContext[2]
 	clusterProject := currentContext[1]
-	clusterRegion := strings.Join(
-		strings.Split(clusterZone, "-")[:len(
-			strings.Split(
-				clusterZone,
-				"-",
-			),
-		)-1],
-		"-",
-	)
-	clusterLocation := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", clusterProject, clusterZone, clusterName)
+	clusterLocation := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", clusterProject, clusterRegion, clusterName)
 
 	clusterObject, err := svc.Projects.Locations.Clusters.Get(clusterLocation).Do()
 	if err != nil {
