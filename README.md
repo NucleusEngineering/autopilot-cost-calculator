@@ -4,11 +4,11 @@
 
 APCostCalculator is a tool that gives you an estimate on how much your workloads will cost in [GKE Autopilot mode](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview). 
 
-To obtain an estimate, you need to be have your workloads running on GKE in Standard mode of operation, or on a compatible self-managed Kuberentes cluster. APCostCalculator connects to your existing cluster and takes a snapshot of consumed resources at that point in time (cpu, memory, ephemeral storage) and maps it to the current GKE Autopilot pricing. 
+To obtain an estimate, you need to be have your workloads already running on a GKE cluster in Standard mode of operation, or on a compatible self-managed Kuberentes cluster (with k8s.io/metrics). APCostCalculator connects to your existing cluster and takes a snapshot of the consumed resources at that point in time (cpu / memory / ephemeral storage) and maps it to the current GKE Autopilot pricing. 
 
-This tool can give a visual output or export the results into a JSON file. JSON file can later be imported into any analytical tool (eg. BigQuery) to better understand cost variations based on workload utilization.
+This gives an output table and can also export the results into a JSON file. JSON file can later be imported into any analytical tool (eg. BigQuery) to better understand cost variations based on workload utilization.
 
-**Accuracy**: Shown prices are an estimation! Since GKE Autopilot has 3 compute classes (regular, balanced, scale-out) with multiple vendors types (AMD, Intel) and different architectures (amd64 and arm64), some assumptions had to be made in the decision logic. Having that in mind, the estimation should be close to reality. This tool also doesn't yet support workloads with GPUs, so if you have any, it will not be reflected in the price.
+**Accuracy**: Shown prices are an estimation! Since GKE Autopilot has 3 compute classes (regular, balanced, scale-out) with multiple vendors types (AMD, Intel) and different architectures (amd64 and arm64), some assumptions had to be made in the calculation logic. Having that in mind, the estimation should be relatively close to reality. This tool doesn't yet support workloads with GPUs, so if you have any, it will not be reflected in the price.
 
 ### Sample output looks like the following:
 
