@@ -26,6 +26,7 @@ import (
 	"google.golang.org/api/cloudbilling/v1"
 	"google.golang.org/api/option"
 	"gopkg.in/ini.v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -119,7 +120,7 @@ func (service *PricingService) CalculatePricing(cpu int64, memory int64, storage
 func (service *PricingService) PopulateWorkloads(nodes map[string]cluster.Node) ([]cluster.Workload, error) {
 	var workloads []cluster.Workload
 
-	podMetricsList, err := service.metricsClientset.MetricsV1beta1().PodMetricses("").List(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.namespace!=kube-system,metadata.namespace!=gke-gmp-system"})
+	podMetricsList, err := service.metricsClientset.MetricsV1beta1().PodMetricses("").List(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.namespace!=kube-system,metadata.namespace!=gke-gmp-system,metadata.namespace!=gmp-system"})
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -140,15 +141,41 @@ func (service *PricingService) PopulateWorkloads(nodes map[string]cluster.Node) 
 		podContainerCount := 0
 
 		// Sum used resources from the Pod
-		for _, k := range v.Containers {
-			cpu += k.Usage.Cpu().MilliValue()
-			memory += k.Usage.Memory().MilliValue() / 1000000000            // Division to get MiB
-			storage += k.Usage.StorageEphemeral().MilliValue() / 1000000000 // Division to get MiB
+		for _, container := range v.Containers {
+
+			cpuUsage := container.Usage.Cpu().MilliValue()
+			memoryUsage := container.Usage.Memory().MilliValue() / 1000000000            // Division to get MiB
+			storageUsage := container.Usage.StorageEphemeral().MilliValue() / 1000000000 // Division to get MiB
+
+			for _, specContainer := range pod.Spec.Containers {
+				if container.Name == specContainer.Name {
+					cpuRequest := specContainer.Resources.Requests[corev1.ResourceCPU]
+					memoryRequest := specContainer.Resources.Requests[corev1.ResourceMemory]
+					storageRequest := specContainer.Resources.Requests[corev1.ResourceStorage]
+
+					// Usage is less than requests, so we set request as usage since the billing works like that
+					if cpuUsage < cpuRequest.MilliValue() {
+						cpuUsage = cpuRequest.MilliValue()
+					}
+
+					if memoryUsage < memoryRequest.MilliValue()/1000000000 {
+						memoryUsage = memoryRequest.MilliValue() / 1000000000
+					}
+
+					if storageUsage < storageRequest.MilliValue()/1000000000 {
+						storageUsage = memoryRequest.MilliValue() / 1000000000
+					}
+				}
+			}
+
+			cpu += cpuUsage
+			memory += memoryUsage
+			storage += storageUsage
 			podContainerCount++
 		}
 
 		// Check and modify the limits of summed workloads from the Pod
-		cpu, memory, storage = ValidateLowerLimits(cpu, memory, storage)
+		cpu, memory, storage = ValidateAndRoundResources(cpu, memory, storage)
 
 		computeClass := service.DecideComputeClass(
 			v.Name,
@@ -187,12 +214,12 @@ func (service *PricingService) PopulateWorkloads(nodes map[string]cluster.Node) 
 func (service *PricingService) DecideComputeClass(workloadName string, mCPU int64, memory int64, arm64 bool) cluster.ComputeClass {
 	ratio := math.Ceil(float64(memory) / float64(mCPU))
 
-	coeficientRegularMin, _ := service.Config.Section("coeficients").Key("regular_min").Float64()
-	coeficientRegularMax, _ := service.Config.Section("coeficients").Key("regular_max").Float64()
-	coeficientBalancedMin, _ := service.Config.Section("coeficients").Key("balanced_min").Float64()
-	coeficientBalancedMax, _ := service.Config.Section("coeficients").Key("balanced_max").Float64()
-	coeficientScaleoutMin, _ := service.Config.Section("coeficients").Key("scaleout_min").Float64()
-	coeficientScaleoutMax, _ := service.Config.Section("coeficients").Key("scaleout_max").Float64()
+	ratioRegularMin, _ := service.Config.Section("ratios").Key("regular_min").Float64()
+	ratioRegularMax, _ := service.Config.Section("ratios").Key("regular_max").Float64()
+	ratioBalancedMin, _ := service.Config.Section("ratios").Key("balanced_min").Float64()
+	ratioBalancedMax, _ := service.Config.Section("ratios").Key("balanced_max").Float64()
+	ratioScaleoutMin, _ := service.Config.Section("ratios").Key("scaleout_min").Float64()
+	ratioScaleoutMax, _ := service.Config.Section("ratios").Key("scaleout_max").Float64()
 
 	scaleoutMcpuMax, _ := service.Config.Section("limits").Key("scaleout_mcpu_max").Int64()
 	scaleoutMemoryMax, _ := service.Config.Section("limits").Key("scaleout_memory_max").Int64()
@@ -205,7 +232,7 @@ func (service *PricingService) DecideComputeClass(workloadName string, mCPU int6
 
 	// ARM64 is still experimental
 	if arm64 {
-		if ratio < coeficientScaleoutMin || ratio > coeficientScaleoutMax || mCPU > scaleoutArmMcpuMax || memory > int64(scaleoutArmMemoryMax) {
+		if ratio < ratioScaleoutMin || ratio > ratioScaleoutMax || mCPU > scaleoutArmMcpuMax || memory > int64(scaleoutArmMemoryMax) {
 			log.Printf("Requesting arm64 but requested mCPU () or memory or ratio are out of accepted range(%s).\n", workloadName)
 		}
 
@@ -213,17 +240,17 @@ func (service *PricingService) DecideComputeClass(workloadName string, mCPU int6
 	}
 
 	// For T2a machines, default to scale-out compute class, since it's the only one supporting it
-	if ratio >= coeficientRegularMin && ratio <= coeficientRegularMax && mCPU <= regularMcpuMax && memory <= regularMemoryMax {
+	if ratio >= ratioRegularMin && ratio <= ratioRegularMax && mCPU <= regularMcpuMax && memory <= regularMemoryMax {
 		return cluster.ComputeClassRegular
 	}
 
 	// If we are out of Regular range, suggest Scale-Out
-	if ratio >= coeficientScaleoutMin && ratio <= coeficientScaleoutMax && mCPU <= scaleoutMcpuMax && memory <= scaleoutMemoryMax {
+	if ratio >= ratioScaleoutMin && ratio <= ratioScaleoutMax && mCPU <= scaleoutMcpuMax && memory <= scaleoutMemoryMax {
 		return cluster.ComputeClassScaleout
 	}
 
 	// If usage is more than general-purpose limits, default to balanced
-	if ratio >= coeficientBalancedMin && ratio <= coeficientBalancedMax && mCPU <= balancedMcpuMax && memory <= balancedMemoryMax {
+	if ratio >= ratioBalancedMin && ratio <= ratioBalancedMax && mCPU <= balancedMcpuMax && memory <= balancedMemoryMax {
 		return cluster.ComputeClassBalanced
 	}
 
@@ -253,6 +280,19 @@ func GetAutopilotPricing(sku string, region string) (PriceList, error) {
 		SpotMemoryScaleoutPrice:    0,
 		SpotArmCpuScaleoutPrice:    0,
 		SpotArmMemoryScaleoutPrice: 0,
+	}
+
+	// If the "region" is actual "zone", we need to remove the zone to get the pricing for the whole region.
+	if len(strings.Split(region, "-")) > 2 {
+		region = strings.Join(
+			strings.Split(region, "-")[:len(
+				strings.Split(
+					region,
+					"-",
+				),
+			)-1],
+			"-",
+		)
 	}
 
 	ctx := context.Background()
@@ -338,17 +378,31 @@ func GetAutopilotPricing(sku string, region string) (PriceList, error) {
 	return pricing, nil
 }
 
-func ValidateLowerLimits(mCPU int64, memory int64, storage int64) (int64, int64, int64) {
+func ValidateAndRoundResources(mCPU int64, memory int64, storage int64) (int64, int64, int64) {
+	// Lowest possible mCPU request, but this is different for DaemonSets that are not yet implemented
 	if mCPU < 250 {
 		mCPU = 250
 	}
 
+	// Minumum memory request, however it's 1G for Scaleout, we don't yet account for this
 	if memory < 500 {
 		memory = 500
 	}
 
 	if storage < 10 {
 		storage = 10
+	}
+
+	mCPUMissing := (250 - (mCPU % 250))
+	if mCPUMissing == 250 {
+		// Nothing to do here, return original values
+		return mCPU, memory, storage
+	}
+
+	// Add missing value to reach nearst 250mCPU step
+	mCPU += mCPUMissing
+	if memory < mCPU {
+		memory = mCPU
 	}
 
 	return mCPU, memory, storage

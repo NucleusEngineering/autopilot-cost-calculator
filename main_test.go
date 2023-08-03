@@ -74,15 +74,15 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestValidateLowerLimits(t *testing.T) {
+func TestValidateAndRoundResources(t *testing.T) {
 	// Test Case #1
 	var cpuWant int64 = 1000
 	var memoryWant int64 = 1000
 	var storageWant int64 = 1000
 
-	cpu, memory, storage := calculator.ValidateLowerLimits(1000, 1000, 1000)
+	cpu, memory, storage := calculator.ValidateAndRoundResources(1000, 1000, 1000)
 	if cpu != cpuWant || memory != memoryWant || storage != storageWant {
-		t.Fatalf(`ValidateLowerLimits(1000,1000,1000,ComputeClassRegular) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
+		t.Fatalf(`ValidateAndRoundResources(1000,1000,1000) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
 	}
 
 	// Test Case #2
@@ -90,10 +90,21 @@ func TestValidateLowerLimits(t *testing.T) {
 	memoryWant = 500
 	storageWant = 10
 
-	cpu, memory, storage = calculator.ValidateLowerLimits(249, 499, 9)
+	cpu, memory, storage = calculator.ValidateAndRoundResources(249, 499, 9)
 	if cpu != cpuWant || memory != memoryWant || storage != storageWant {
-		t.Fatalf(`ValidateLowerLimits(10,10,5,ComputeClassRegular) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
+		t.Fatalf(`ValidateAndRoundResources(249,499,5) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
 	}
+
+	// Test Case #3
+	cpuWant = 1750
+	memoryWant = 1750
+	storageWant = 900
+
+	cpu, memory, storage = calculator.ValidateAndRoundResources(1618, 1700, 900)
+	if cpu != cpuWant || memory != memoryWant || storage != storageWant {
+		t.Fatalf(`ValidateAndRoundResources(1750, 1700, 900) = %d, %d, %d doesn't match expected %d %d %d`, cpu, memory, storage, cpuWant, memoryWant, storageWant)
+	}
+
 }
 
 func TestDecideComputeClass(t *testing.T) {
